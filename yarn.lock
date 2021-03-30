@@ -940,11 +940,6 @@
     web3 "^1.2.1"
     web3-utils "^1.2.1"
 
-"@pancakeswap/pancake-swap-lib@0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@pancakeswap/pancake-swap-lib/-/pancake-swap-lib-0.0.1.tgz#8ed3bb89f7282e63e6dd1937914df6d6110cf76f"
-  integrity sha512-zSx5nvDM9HN9aziZXXoZIqmj3wKLkP9HHZZpr+1bxjmZrSfYecORrnl7YKy1nqLU4FW7F9wqMltmp1dFNIeseg==
-
 "@resolver-engine/core@^0.2.1":
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.2.1.tgz#0d71803f6d3b8cb2e9ed481a1bf0ca5f5256d0c0"
