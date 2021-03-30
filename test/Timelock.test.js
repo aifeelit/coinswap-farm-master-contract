@@ -1,10 +1,9 @@
 const { expectRevert, time } = require('@openzeppelin/test-helpers');
 const ethers = require('ethers');
-const CSS = artifacts.require('CSS');
+const CSS = artifacts.require('CSSToken');
 const Master = artifacts.require('Master');
-const MockBEP20 = artifacts.require('libs/MockBEP20');
+const MockBEP20 = artifacts.require('libraries/MockBEP20');
 const Timelock = artifacts.require('Timelock');
-const SyrupBar = artifacts.require('SyrupBar');
 
 function encodeParameters(types, values) {
     const abi = new ethers.utils.AbiCoder();
@@ -64,7 +63,6 @@ contract('Timelock', ([alice, bob, carol, dev, minter]) => {
     it('should also work with Master', async () => {
         this.lp1 = await MockBEP20.new('LPToken', 'LP', '10000000000', { from: minter });
         this.lp2 = await MockBEP20.new('LPToken', 'LP', '10000000000', { from: minter });
-        this.syrup = await SyrupBar.new(this.css.address, { from: minter });
         this.master = await Master.new(this.css.address, this.syrup.address, dev, '1000', '0', { from: alice });
         await this.css.transferOwnership(this.master.address, { from: alice });
         await this.syrup.transferOwnership(this.master.address, { from: minter });

@@ -1,12 +1,11 @@
 const { expectRevert, time } = require('@openzeppelin/test-helpers');
 const { assert } = require('chai');
-const CSS = artifacts.require('CSS');
-const SyrupBar = artifacts.require('SyrupBar');
-const Master = artifacts.require('Master');
-const MockBEP20 = artifacts.require('libs/MockBEP20');
+const CSS = artifacts.require('CSSToken');
+const Master = artifacts.require('MasterCSS');
+const MockBEP20 = artifacts.require('libraries/MockBEP20');
 const LotteryRewardPool = artifacts.require('LotteryRewardPool');
 
-contract('Master', ([alice, bob, carol, dev, minter]) => {
+contract('MasterCSS', ([alice, bob, carol, dev, minter]) => {
   beforeEach(async () => {
     this.css = await CSS.new({ from: minter });
     this.syrup = await SyrupBar.new(this.css.address, { from: minter });
