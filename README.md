@@ -1,14 +1,13 @@
 The CoinSwap is a suite of products in Decentralized Finance. Perfect ecosystem for automated liquidity provision on Binance Smart Chain, incentivizing community for their efforts to AMM model.
 https://coinswap.space
 
-### CSS Token 
+## CSS Token 
 Name: CoinSwap Token
-Ticker: CSS
-Decimals: 18
+Ticker: CSSDecimals: 18
 Initial supply: 400,000
 Max supply: 19,999,999
 
-# CSS Farm
+## CSS Farm
 Emission rate CSS/block
 
 10 days - 0.6
