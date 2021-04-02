@@ -2,22 +2,21 @@ The CoinSwap is a suite of products in Decentralized Finance. Perfect ecosystem 
 https://coinswap.space
 
 ## CSS Token 
-Name: CoinSwap Token
-Ticker: CSSDecimals: 18
-Initial supply: 400,000
-Max supply: 19,999,999
+- Name: CoinSwap Token
+- Ticker: CSSDecimals: 18
+- Initial supply: 400,000
+- Max supply: 19,999,999
 
 ## CSS Farm
 Emission rate CSS/block
+- 10 days - 0.6
+- after - 0.45
+- 12 months - 0.41
+- 24 months - 0.37
+- 36 months - 0.33
+- 48 months - 0.29
 
-10 days - 0.6
-after - 0.45
-12 months - 0.41
-24 months - 0.37
-36 months - 0.33
-48 months - 0.29
-
-Reduction 0.04 per block every 12 months
+- Reduction 0.04 per block every 12 months
 
 ### FEES
 Dev fee: 8% of the emission rate is sent to developers which is also used to pay for advertising, partnerships and other expenses to boost the ecosystem. 
