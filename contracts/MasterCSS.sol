@@ -249,7 +249,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accCssPerShare = accCssPerShare .add(cssReward.mul(1e12).div(lpSupply));
+            accCssPerShare = accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accCssPerShare).div(1e12).sub(user.rewardDebt);
     }
