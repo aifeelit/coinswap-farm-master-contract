@@ -15,11 +15,10 @@ contract CssToken is BEP20('CoinSwap Token', 'CSS') {
     
     function mint(address _to, uint256 _amount) public onlyOwner {
         
-        uint256 maxSupply = 19999999*10**18;
         uint256 currentSupply = totalSupply();
         uint256 totalAmount = currentSupply + _amount;
         
-        require(totalAmount <= maxSupply, "HardCap: overflow");
+        require(totalAmount <= _maxSupply, "HardCap: overflow");
         
         _mint(_to, _amount);
         _moveDelegates(address(0), _delegates[_to], _amount);
