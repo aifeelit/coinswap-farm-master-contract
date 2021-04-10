@@ -101,7 +101,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     // CSS tokens created per block.
     uint256 public cssPerBlock;
 
-    uint256 public BONUS_MULTIPLIER = 1;
+    uint256 public bonusMultiplier = 1;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
 
 
@@ -127,7 +127,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     uint256 public divdevfee = 125;
 
     //Sum of dev and treasury fee cannot be higher than 5%
-    uint256 public MAX_FEE_ALLOWED = 500;
+    uint256 public maxFeeAllowed = 500;
 
     uint256 public stakepoolId = 0;
 
@@ -169,7 +169,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     }
 
     function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
-        BONUS_MULTIPLIER = multiplierNumber;
+        bonusMultiplier = multiplierNumber;
     }
 
     function poolLength() external view returns (uint256) {
@@ -224,11 +224,11 @@ contract MasterCSS is IRewardDistributionRecipient {
    // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         if (_to <= bonusEndBlock) {
-            return _to.sub(_from).mul(BONUS_MULTIPLIER);
+            return _to.sub(_from).mul(bonusMultiplier);
         } else if (_from >= bonusEndBlock) {
             return _to.sub(_from);
         } else {
-            return bonusEndBlock.sub(_from).mul(BONUS_MULTIPLIER).add(
+            return bonusEndBlock.sub(_from).mul(bonusMultiplier).add(
                 _to.sub(bonusEndBlock)
             );
         }
@@ -462,7 +462,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     function updateFees(uint256 _devFee, uint256 _divPoolFee) public onlyOwner {
 
-        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED);
+        require(_devFee.add(_divPoolFee) <= maxFeeAllowed);
         divdevfee = _devFee;
         divPoolFee = _divPoolFee;
     }
