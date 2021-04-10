@@ -101,9 +101,8 @@ contract MasterCSS is IRewardDistributionRecipient {
     // CSS tokens created per block.
     uint256 public cssPerBlock;
 
+    // Multiplier that can be use to multiply all farm rewards (allocationPoints)
     uint256 public bonusMultiplier = 1;
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -113,8 +112,6 @@ contract MasterCSS is IRewardDistributionRecipient {
     uint256 public totalAllocPoint;
     // The block number when This   mining starts.
     uint256 public startBlock;
-
-    uint256 public bonusEndBlock;
 
     // Mint fee that is fixed on 8%
     uint256 public mintFee = 800;
@@ -145,15 +142,13 @@ contract MasterCSS is IRewardDistributionRecipient {
         address _devaddr,
         address _divPoolAddress,
         uint256 _cssPerBlock,
-        uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _startBlock
     ) public {
         st = _st;
         devaddr = _devaddr;
         divPoolAddress = _divPoolAddress;
         cssPerBlock = _cssPerBlock;
         startBlock = _startBlock;
-        bonusEndBlock = _bonusEndBlock;
 
 
         // adds CSS as first pool token with pid = 0
@@ -238,15 +233,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
    // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        if (_to <= bonusEndBlock) {
-            return _to.sub(_from).mul(bonusMultiplier);
-        } else if (_from >= bonusEndBlock) {
-            return _to.sub(_from);
-        } else {
-            return bonusEndBlock.sub(_from).mul(bonusMultiplier).add(
-                _to.sub(bonusEndBlock)
-            );
-        }
+        return _to.sub(_from).mul(bonusMultiplier);
     }
 
     // View function to see pending tokens on frontend.
@@ -361,7 +348,7 @@ contract MasterCSS is IRewardDistributionRecipient {
             uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
             if (pending > 0) {
                 payRefFees(pending);
-                safeStransfer(msg.sender, pending);
+                safeTransfer(msg.sender, pending);
                 emit RewardPaid(msg.sender, pending);
             }
         }
@@ -402,7 +389,7 @@ contract MasterCSS is IRewardDistributionRecipient {
             if (pending > 0) {
                 payRefFees(pending);
 
-                safeStransfer(msg.sender, pending);
+                safeTransfer(msg.sender, pending);
                 emit RewardPaid(msg.sender, pending);
 
                 deposit(stakepoolId, pending, address(0));
@@ -423,7 +410,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         updatePool(_pid);
         uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
         if (pending > 0) {
-            safeStransfer(msg.sender, pending);
+            safeTransfer(msg.sender, pending);
             emit RewardPaid(msg.sender, pending);
         }
         if (_amount > 0) {
@@ -461,11 +448,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         user.rewardDebt = 0;
     }
 
-    function changeCssPerBlock(uint256 _cssPerBlock) public onlyOwner {
-        cssPerBlock = _cssPerBlock;
-    }
-
-    function safeStransfer(address _to, uint256 _amount) internal {
+    function safeTransfer(address _to, uint256 _amount) internal {
         uint256 sbal = st.balanceOf(address(this));
         if (_amount > sbal) {
             st.transfer(_to, sbal);
@@ -483,9 +466,9 @@ contract MasterCSS is IRewardDistributionRecipient {
     }
 
     function setdivPoolAddress(address _divPoolAddress) public onlyOwner {
-
         divPoolAddress = _divPoolAddress;
     }
+
     // Update dev address by the previous dev.
     function devAddress(address _devaddr) public onlyOwner {
         devaddr = _devaddr;
