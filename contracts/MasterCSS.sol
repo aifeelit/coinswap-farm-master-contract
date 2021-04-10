@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+ // SPDX-License-Identifier: MIT
 import './libraries/SafeMath.sol';
 import './interfaces/IBEP20.sol';
 import './libraries/BEP20.sol';
@@ -10,7 +10,6 @@ pragma solidity 0.6.12;
 //  referral
 interface CssReferral {
     function setCssReferral(address farmer, address referrer) external;
-
     function getCssReferral(address farmer) external view returns (address);
 }
 
@@ -86,7 +85,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         uint256 fee;
     }
 
-    // The  TOKEN!
+    // The CSS TOKEN!
     CssToken public st;
 
     uint256 public timeFirstStep;
@@ -118,7 +117,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     uint256 public bonusEndBlock;
 
     // Mint fee that is fixed on 8%
-    uint256 public mintFee = 80;
+    uint256 public mintFee = 800;
 
     // Referral fee that is fixed on 15%
     uint256 public divreferralfee = 1500;
@@ -135,18 +134,14 @@ contract MasterCSS is IRewardDistributionRecipient {
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
-
-
     event RewardPaid(address indexed user, uint256 reward);
-    event ReferralPaid(address indexed user, address indexed userTo, uint256 reward);
-
+    event ReferralPaid(address indexed user,address indexed userTo, uint256 reward);
     event Burned(uint256 reward);
 
     mapping(uint256 => bool) public enablemethod;
 
     constructor(
         CssToken _st,
-
         address _devaddr,
         address _divPoolAddress,
         uint256 _cssPerBlock,
@@ -154,7 +149,6 @@ contract MasterCSS is IRewardDistributionRecipient {
         uint256 _bonusEndBlock
     ) public {
         st = _st;
-
         devaddr = _devaddr;
         divPoolAddress = _divPoolAddress;
         cssPerBlock = _cssPerBlock;
@@ -183,11 +177,11 @@ contract MasterCSS is IRewardDistributionRecipient {
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock, uint256 __fee) public onlyOwner {
+    // DO NOT add the same LP token more than once. Rewards will be messed up if you do.
+    function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock,uint256 __fee) public onlyOwner {
 
-        // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
-        require(__fee <= 10);
+          // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
+        require(__fee<=10);
 
         if (_withUpdate) {
             massUpdatePools();
@@ -195,33 +189,31 @@ contract MasterCSS is IRewardDistributionRecipient {
         uint256 lastRewardBlock = __lastRewardBlock == 0 ? block.number > startBlock ? block.number : startBlock : __lastRewardBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(PoolInfo({
-        lpToken : _lpToken,
-        allocPoint : _allocPoint,
-        lastRewardBlock : lastRewardBlock,
-        accCssPerShare : 0,
-        fee : __fee
+            lpToken: _lpToken,
+            allocPoint: _allocPoint,
+            lastRewardBlock: lastRewardBlock,
+            accCssPerShare: 0,
+            fee:__fee
         }));
-
     }
 
-    // Update the given pool's CSS allocation point. Can only be called by the owner. if update lastrewardblock, need update pools
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc, uint256 __fee) public onlyOwner {
+    // Update the given pool's CSS allocation point. Can only be called by the owner. If update lastrewardblock, need update pools
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc,uint256 __fee) public onlyOwner {
         // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
-        require(__fee <= 10);
+         require(__fee<=10);
 
-        if (_withUpdate) {
+         if (_withUpdate) {
             massUpdatePools();
         }
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint;
-        if (__lastRewardBloc > 0)
+        if(__lastRewardBloc>0)
             poolInfo[_pid].lastRewardBlock = __lastRewardBloc;
 
         poolInfo[_pid].fee = __fee;
     }
 
-
-    // Return reward multiplier over the given _from to _to block.
+   // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         if (_to <= bonusEndBlock) {
             return _to.sub(_from).mul(BONUS_MULTIPLIER);
@@ -241,18 +233,18 @@ contract MasterCSS is IRewardDistributionRecipient {
         uint256 accCssPerShare = pool.accCssPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
 
-        if (now < timeFirstStep)
-            cssPerBlock = 6 * 10 ** 17;
-        else if (timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45 * 10 ** 16;
-        else if (timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41 * 10 ** 16;
-        else if (timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37 * 10 ** 16;
-        else if (timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33 * 10 ** 16;
-        else if (timeFifthStep < now)
-            cssPerBlock = 29 * 10 ** 16;
+        if(now < timeFirstStep)
+            cssPerBlock = 6*10**17;
+        else if(timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45*10**16;
+        else if(timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41*10**16;
+        else if(timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37*10**16;
+        else if(timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33*10**16;
+        else if(timeFifthStep < now)
+            cssPerBlock = 29*10**16;
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
@@ -270,7 +262,6 @@ contract MasterCSS is IRewardDistributionRecipient {
         }
     }
 
-
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
@@ -283,53 +274,54 @@ contract MasterCSS is IRewardDistributionRecipient {
             return;
         }
 
-        if (now < timeFirstStep)
-            cssPerBlock = 6 * 10 ** 17;
-        else if (timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45 * 10 ** 16;
-        else if (timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41 * 10 ** 16;
-        else if (timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37 * 10 ** 16;
-        else if (timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33 * 10 ** 16;
-        else if (timeFifthStep < now)
-            cssPerBlock = 29 * 10 ** 16;
+        if(now < timeFirstStep)
+            cssPerBlock = 6*10**17;
+        else if(timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45*10**16;
+        else if(timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41*10**16;
+        else if(timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37*10**16;
+        else if(timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33*10**16;
+        else if(timeFifthStep < now)
+            cssPerBlock = 29*10**16;
 
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
 
         st.mint(address(this), cssReward);
         //mint to dev - fixed 8%
-        st.mint(devaddr, cssReward.mul(mintFee).div(1000));
+        st.mint(devaddr, cssReward.mul(mintFee).div(10000));
 
         pool.accCssPerShare = pool.accCssPerShare .add(cssReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
-    /** Harvest all pools where user has pending balance at same time!  Be careful of gas spending! **/
+    // Harvest All Rewards pools where user has pending balance at same time!  Be careful of gas spending!
     function massHarvest(uint256[] memory idsx) public {
-        require(enablemethod[0]);
+            require(enablemethod[0]);
 
         uint256 idxlength = idsx.length;
         address nulladdress = address(0);
-        for (uint256 i = 0; i < idxlength; i++) {
-            deposit(idsx[i], 0, nulladdress);
-        }
+          for (uint256 i = 0; i < idxlength;  i++) {
+                 deposit(idsx[i],0,nulladdress);
+            }
 
     }
 
-    /** Harvest & stake to stakepool all pools where user has pending balance at same time!  Be careful of gas spending! **/
+    // Stake All Rewards to stakepool all pools where user has pending balance at same time!  Be careful of gas spending!
     function massStake(uint256[] memory idsx) public {
-        require(enablemethod[1]);
+         require(enablemethod[1]);
         uint256 idxlength = idsx.length;
-        for (uint256 i = 0; i < idxlength; i++) {
-            stakeReward(idsx[i]);
-        }
+          for (uint256 i = 0; i < idxlength;  i++) {
+                 stakeReward(idsx[i]);
+            }
     }
 
     // Deposit LP tokens to MasterCSS for CSS allocation.
-    function deposit(uint256 _pid, uint256 _amount, address referrer) public {
+    function deposit(uint256 _pid, uint256 _amount,address referrer) public   {
+
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
