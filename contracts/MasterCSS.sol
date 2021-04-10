@@ -1,5 +1,5 @@
  // SPDX-License-Identifier: MIT
-import './libraries/SafeMath.sol'; 
+import './libraries/SafeMath.sol';
 import './interfaces/IBEP20.sol';
 import './libraries/BEP20.sol';
 import './CSSToken.sol';
@@ -13,15 +13,15 @@ interface CssReferral {
     function getCssReferral(address farmer) external view returns (address);
 }
 
- contract IRewardDistributionRecipient is Ownable {
+contract IRewardDistributionRecipient is Ownable {
     address public rewardReferral;
     address public rewardVote;
- 
+
 
     function setRewardReferral(address _rewardReferral) external onlyOwner {
         rewardReferral = _rewardReferral;
     }
- 
+
 }
 /**
  * @dev Implementation of the {IBEP20} interface.
@@ -55,7 +55,7 @@ interface CssReferral {
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract MasterCSS   is IRewardDistributionRecipient {
+contract MasterCSS is IRewardDistributionRecipient {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
 
@@ -84,7 +84,7 @@ contract MasterCSS   is IRewardDistributionRecipient {
         uint256 accCssPerShare;   // Accumulated CSS per share, times 1e12. See below.
         uint256 fee;
     }
- 
+
     // The CSS TOKEN!
     CssToken public st;
 
@@ -93,32 +93,44 @@ contract MasterCSS   is IRewardDistributionRecipient {
     uint256 public timeThirdStep;
     uint256 public timeForthStep;
     uint256 public timeFifthStep;
-     
+
     // Dev address
     address public devaddr;
-    
+
+    address public divPoolAddress;
     // CSS tokens created per block.
     uint256 public cssPerBlock;
-    
+
     uint256 public BONUS_MULTIPLIER = 1;
-    
+    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
+
+
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
-    mapping (uint256 => mapping (address => UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when This   mining starts.
     uint256 public startBlock;
-    
-    uint256 public bonusEndBlock;
-      
-    uint256 public divreferralfee = 150; // to referral
-    uint256 public divdevfee = 80;  // to dev
-    uint256 public MAX_FEE_ALLOWED = 200;  
-    
 
-    uint256 public stakepoolId = 0;  
+    uint256 public bonusEndBlock;
+
+    // Mint fee that is fixed on 8%
+    uint256 public mintFee = 800;
+
+    // Referral fee that is fixed on 15%
+    uint256 public divreferralfee = 1500;
+
+    //Fees to dev and treasury (initially 3,75% and 1,25%) it can be modified by using updateFees function
+    uint256 public divPoolFee = 375;
+    uint256 public divdevfee = 125;
+
+    //Sum of dev and treasury fee cannot be higher than 5%
+    uint256 public MAX_FEE_ALLOWED = 500;
+
+    uint256 public stakepoolId = 0;
+
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -126,32 +138,34 @@ contract MasterCSS   is IRewardDistributionRecipient {
     event ReferralPaid(address indexed user,address indexed userTo, uint256 reward);
     event Burned(uint256 reward);
 
-    mapping (uint256 => bool) public enablemethod;   
-       
+    mapping(uint256 => bool) public enablemethod;
+
     constructor(
-        CssToken _st,      
+        CssToken _st,
         address _devaddr,
+        address _divPoolAddress,
         uint256 _cssPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
         st = _st;
         devaddr = _devaddr;
+        divPoolAddress = _divPoolAddress;
         cssPerBlock = _cssPerBlock;
         startBlock = _startBlock;
         bonusEndBlock = _bonusEndBlock;
-        
+
         totalAllocPoint = 0;
-        
-        enablemethod[0]= false;
-        enablemethod[1]= false;
-        enablemethod[2]= true;
+
+        enablemethod[0] = false;
+        enablemethod[1] = false;
+        enablemethod[2] = true;
 
         timeFirstStep = now + 10 days;
-        timeSecondStep = now + 365 days ;
-        timeThirdStep = now + 730 days ;
-        timeForthStep = now + 1095 days ;
-        timeFifthStep = now + 1460 days ;
+        timeSecondStep = now + 365 days;
+        timeThirdStep = now + 730 days;
+        timeForthStep = now + 1095 days;
+        timeFifthStep = now + 1460 days;
     }
 
     function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
@@ -172,10 +186,10 @@ contract MasterCSS   is IRewardDistributionRecipient {
     // Add a new lp to the pool. Can only be called by the owner.
     // Each LP token address can be added only once- safeguarded by poolExistence
     function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock,uint256 __fee) public onlyOwner nonDuplicated(_lpToken) {
-        
+
         // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
         require(__fee<=10);
-        
+
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -188,14 +202,14 @@ contract MasterCSS   is IRewardDistributionRecipient {
             lastRewardBlock: lastRewardBlock,
             accCssPerShare: 0,
             fee:__fee
-        })); 
+        }));
     }
 
     // Update the given pool's CSS allocation point. Can only be called by the owner. If update lastrewardblock, need update pools
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc,uint256 __fee) public onlyOwner { 
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc,uint256 __fee) public onlyOwner {
         // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
          require(__fee<=10);
-         
+
          if (_withUpdate) {
             massUpdatePools();
         }
@@ -203,10 +217,10 @@ contract MasterCSS   is IRewardDistributionRecipient {
         poolInfo[_pid].allocPoint = _allocPoint;
         if(__lastRewardBloc>0)
             poolInfo[_pid].lastRewardBlock = __lastRewardBloc;
-         
-            poolInfo[_pid].fee = __fee;
+
+        poolInfo[_pid].fee = __fee;
     }
- 
+
    // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         if (_to <= bonusEndBlock) {
@@ -243,9 +257,9 @@ contract MasterCSS   is IRewardDistributionRecipient {
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accCssPerShare = accCssPerShare .add(cssReward.mul(1e12).div(lpSupply));
+            accCssPerShare = accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accCssPerShare ).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accCssPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -283,136 +297,145 @@ contract MasterCSS   is IRewardDistributionRecipient {
 
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-         st.mint(address(this), cssReward); 
-         st.mint(devaddr, cssReward.mul(divdevfee).div(1000));
-        pool.accCssPerShare = pool.accCssPerShare .add(cssReward.mul(1e12).div(lpSupply));
+
+        st.mint(address(this), cssReward);
+        //mint to dev - fixed 8%
+        st.mint(devaddr, cssReward.mul(mintFee).div(10000));
+
+        pool.accCssPerShare = pool.accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
-    
+
     // Harvest All Rewards pools where user has pending balance at same time!  Be careful of gas spending!
-    function massHarvest(uint256[] memory idsx) public { 
+    function massHarvest(uint256[] memory idsx) public {
             require(enablemethod[0]);
-            
-        uint256 idxlength = idsx.length; 
-        address nulladdress = address(0); 
+
+        uint256 idxlength = idsx.length;
+        address nulladdress = address(0);
           for (uint256 i = 0; i < idxlength;  i++) {
                  deposit(idsx[i],0,nulladdress);
             }
-        
+
     }
-    
+
     // Stake All Rewards to stakepool all pools where user has pending balance at same time!  Be careful of gas spending!
-    function massStake(uint256[] memory idsx) public { 
+    function massStake(uint256[] memory idsx) public {
          require(enablemethod[1]);
-        uint256 idxlength = idsx.length; 
+        uint256 idxlength = idsx.length;
           for (uint256 i = 0; i < idxlength;  i++) {
                  stakeReward(idsx[i]);
-            } 
+            }
     }
-    
+
     // Deposit LP tokens to MasterCSS for CSS allocation.
     function deposit(uint256 _pid, uint256 _amount,address referrer) public   {
 
-        
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        
-        // anti -backdoor 
-         require((block.number >= pool.lastRewardBlock || _amount==0) ,"pool didnt start yet");
-        
-        updatePool(_pid); 
-         if (_amount>0 && rewardReferral != address(0) && referrer != address(0)) {
-            CssReferral(rewardReferral).setCssReferral (msg.sender, referrer);
+
+        // anti -backdoor
+        require((block.number >= pool.lastRewardBlock || _amount == 0), "pool didnt start yet");
+
+        updatePool(_pid);
+        if (_amount > 0 && rewardReferral != address(0) && referrer != address(0)) {
+            CssReferral(rewardReferral).setCssReferral(msg.sender, referrer);
         }
-        
+
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accCssPerShare ).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) {
-               payRefFees(pending);
-              safeStransfer(msg.sender, pending);
-              emit RewardPaid(msg.sender, pending); 
+            uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
+            if (pending > 0) {
+                payRefFees(pending);
+                safeStransfer(msg.sender, pending);
+                emit RewardPaid(msg.sender, pending);
             }
         }
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-           if(pool.fee > 0){
+            if (pool.fee > 0) {
+                // if pool.fee = 10 ==>  375 * 10/100000 = 3,75% fee
+                // if pool.fee = 5 ==>  375 * 5/100000 = 1,875% fee
+                // if pool.fee = 0 ==>  375 * 0/100000 = 0 fee
+                uint256 treasuryfee = _amount.mul(pool.fee).mul(divPoolFee).div(100000);
+                uint256 devfee = _amount.mul(pool.fee).mul(divdevfee).div(100000);
 
-                uint256 devfee = _amount.mul(pool.fee).mul(divdevfee).div(10000);
+                pool.lpToken.safeTransfer(divPoolAddress, treasuryfee);
+                pool.lpToken.safeTransfer(devaddr, devfee);
 
-                 pool.lpToken.safeTransfer(devaddr, devfee);
- 
-                user.amount = user.amount.add(_amount).sub(devfee);
-            }else{
+                user.amount = user.amount.add(_amount).sub(treasuryfee).sub(devfee);
+            } else {
                 user.amount = user.amount.add(_amount);
             }
         }
-         
-        user.rewardDebt = user.amount.mul(pool.accCssPerShare ).div(1e12);
+
+        user.rewardDebt = user.amount.mul(pool.accCssPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // User can choose Stake Reward to stake pool instead just harvest
+    // user can choose autoStake reward to stake pool instead just harvest
     function stakeReward(uint256 _pid) public {
-        require(enablemethod[2] && _pid!=stakepoolId);
-        
+        require(enablemethod[2] && _pid != stakepoolId);
+
         UserInfo storage user = userInfo[_pid][msg.sender];
-        
-           if (user.amount > 0) {
-            PoolInfo storage pool = poolInfo[_pid];   
-            
+
+        if (user.amount > 0) {
+            PoolInfo storage pool = poolInfo[_pid];
+
             updatePool(_pid);
-            
-            uint256 pending = user.amount.mul(pool.accCssPerShare ).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) {
+
+            uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
+            if (pending > 0) {
                 payRefFees(pending);
-                 
+
                 safeStransfer(msg.sender, pending);
-                emit RewardPaid(msg.sender, pending); 
-                
-                deposit(stakepoolId,pending,address(0));
-                
+                emit RewardPaid(msg.sender, pending);
+
+                deposit(stakepoolId, pending, address(0));
+
             }
-          user.rewardDebt = user.amount.mul(pool.accCssPerShare ).div(1e12);
+            user.rewardDebt = user.amount.mul(pool.accCssPerShare).div(1e12);
         }
-         
+
     }
 
     // Withdraw LP tokens from MasterCSS.
     function withdraw(uint256 _pid, uint256 _amount) public {
-  
+
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accCssPerShare ).div(1e12).sub(user.rewardDebt);
-        if(pending > 0) {
-         safeStransfer(msg.sender, pending);
-         emit RewardPaid(msg.sender, pending); 
+        uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
+        if (pending > 0) {
+            safeStransfer(msg.sender, pending);
+            emit RewardPaid(msg.sender, pending);
         }
-        if(_amount > 0) {
+        if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accCssPerShare ).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accCssPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
-    
-    function payRefFees( uint256 pending ) internal
-    { 
-        uint256 toReferral = pending.mul(divreferralfee).div(1000); // 15% 
-   
-         address referrer = address(0);
-          if (rewardReferral != address(0)) {
-                referrer = CssReferral(rewardReferral).getCssReferral (msg.sender);
-               
-            }
-            
-            if (referrer != address(0)) { // send commission to referrer 
-               st.mint(referrer, toReferral);
-                emit ReferralPaid(msg.sender, referrer,toReferral); 
-            }
+
+    function payRefFees(uint256 pending) internal
+    {
+        uint256 toReferral = pending.mul(divreferralfee).div(10000);
+        // 15%
+
+        address referrer = address(0);
+        if (rewardReferral != address(0)) {
+            referrer = CssReferral(rewardReferral).getCssReferral(msg.sender);
+        }
+
+        if (referrer != address(0)) {// send commission to referrer
+            st.mint(referrer, toReferral);
+            emit ReferralPaid(msg.sender, referrer, toReferral);
+        }
     }
-    
+
+
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
@@ -422,11 +445,11 @@ contract MasterCSS   is IRewardDistributionRecipient {
         user.amount = 0;
         user.rewardDebt = 0;
     }
-  
+
     function changeCssPerBlock(uint256 _cssPerBlock) public onlyOwner {
         cssPerBlock = _cssPerBlock;
     }
- 
+
     function safeStransfer(address _to, uint256 _amount) internal {
         uint256 sbal = st.balanceOf(address(this));
         if (_amount > sbal) {
@@ -435,24 +458,31 @@ contract MasterCSS   is IRewardDistributionRecipient {
             st.transfer(_to, _amount);
         }
     }
- 
-    function updateFees(uint256 _devFee,uint256 _refFee ) public onlyOwner{
 
-       require(_devFee <= MAX_FEE_ALLOWED && _refFee <= MAX_FEE_ALLOWED);
-        divdevfee = _devFee; 
-        divreferralfee = _refFee;
+
+    function updateFees(uint256 _devFee, uint256 _divPoolFee) public onlyOwner {
+
+        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED);
+        divdevfee = _devFee;
+        divPoolFee = _divPoolFee;
     }
 
-    function devAddress(address _devaddr) public onlyOwner{
+    function setdivPoolAddress(address _divPoolAddress) public onlyOwner {
+
+        divPoolAddress = _divPoolAddress;
+    }
+    // Update dev address by the previous dev.
+    function devAddress(address _devaddr) public onlyOwner {
         devaddr = _devaddr;
     }
-    
-    function setStakePoolId(uint256 _id)  public onlyOwner  {
-        stakepoolId =_id;
+
+    //set what will be the stake pool
+    function setStakePoolId(uint256 _id) public onlyOwner {
+        stakepoolId = _id;
     }
-    
-    function enableMethod(uint256 _id,bool enabled) public onlyOwner
-    { 
-        enablemethod[_id]= enabled;
+
+    function enableMethod(uint256 _id, bool enabled) public onlyOwner
+    {
+        enablemethod[_id] = enabled;
     }
 }
