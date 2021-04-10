@@ -109,8 +109,8 @@ contract MasterCSS is IRewardDistributionRecipient {
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
+    // Total allocation points. Must be the sum of all allocation points in all pools.
+    uint256 public totalAllocPoint;
     // The block number when This   mining starts.
     uint256 public startBlock;
 
@@ -129,7 +129,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     //Sum of dev and treasury fee cannot be higher than 5%
     uint256 public MAX_FEE_ALLOWED = 500;
 
-    uint256 public stakepoolId = 0;
+    uint256 public stakepoolId;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -155,7 +155,21 @@ contract MasterCSS is IRewardDistributionRecipient {
         startBlock = _startBlock;
         bonusEndBlock = _bonusEndBlock;
 
-        totalAllocPoint = 0;
+
+        // adds CSS as first pool token with pid = 0
+        poolExistence[_st] = true;
+        poolInfo.push(PoolInfo({
+            lpToken: _st,
+            allocPoint: 1500,
+            lastRewardBlock: startBlock,
+            accCssPerShare: 0,
+            fee: 0
+        }));
+
+        stakepoolId = 0;
+
+        // Must be the sum of all allocation points in all pools. Initially 1000 because of CssToken pool
+        totalAllocPoint = 1500;
 
         enablemethod[0] = false;
         enablemethod[1] = false;
@@ -474,11 +488,6 @@ contract MasterCSS is IRewardDistributionRecipient {
     // Update dev address by the previous dev.
     function devAddress(address _devaddr) public onlyOwner {
         devaddr = _devaddr;
-    }
-
-    //set what will be the stake pool
-    function setStakePoolId(uint256 _id) public onlyOwner {
-        stakepoolId = _id;
     }
 
     function enableMethod(uint256 _id, bool enabled) public onlyOwner
