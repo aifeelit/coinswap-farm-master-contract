@@ -166,9 +166,10 @@ contract MasterCSS is IRewardDistributionRecipient {
             fee: 0
         }));
 
+        // stakepoolId cannot be changed afterwards
         stakepoolId = 0;
 
-        // Must be the sum of all allocation points in all pools. Initially 1000 because of CssToken pool
+        // Must be the sum of all allocation points in all pools. Initially 1500 because of stake CssToken  pool
         totalAllocPoint = 1500;
 
         enablemethod[0] = false;
