@@ -122,7 +122,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     // Referral fee that is fixed on 15%
     uint256 public divreferralfee = 1500;
 
-    //Fees to dev and treasury (initially 3,75% and 1,25%)
+    //Fees to dev and treasury (initially 3,75% and 1,25%) it can be modified by using updateFees function
     uint256 public divPoolFee = 375;
     uint256 public divdevfee = 125;
 
