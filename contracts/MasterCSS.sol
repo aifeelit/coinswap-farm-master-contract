@@ -294,7 +294,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         //mint to dev - fixed 8%
         st.mint(devaddr, cssReward.mul(mintFee).div(10000));
 
-        pool.accCssPerShare = pool.accCssPerShare .add(cssReward.mul(1e12).div(lpSupply));
+        pool.accCssPerShare = pool.accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
