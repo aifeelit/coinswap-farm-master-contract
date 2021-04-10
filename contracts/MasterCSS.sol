@@ -176,11 +176,18 @@ contract MasterCSS is IRewardDistributionRecipient {
         return poolInfo.length;
     }
 
-    // Add a new lp to the pool. Can only be called by the owner.
-    // DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock,uint256 __fee) public onlyOwner {
+    //used to prevent LP token duplication
+    mapping(IBEP20 => bool) public poolExistence;
+    modifier nonDuplicated(IBEP20 _lpToken) {
+        require(poolExistence[_lpToken] == false, "nonDuplicated: duplicated");
+        _;
+    }
 
-          // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
+    // Add a new lp to the pool. Can only be called by the owner.
+    // Each LP token address can be added only once- safeguarded by poolExistence
+    function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock,uint256 __fee) public onlyOwner nonDuplicated(_lpToken) {
+
+        // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
         require(__fee<=10);
 
         if (_withUpdate) {
@@ -188,6 +195,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         }
         uint256 lastRewardBlock = __lastRewardBlock == 0 ? block.number > startBlock ? block.number : startBlock : __lastRewardBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
+        poolExistence[_lpToken] = true;
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             allocPoint: _allocPoint,
