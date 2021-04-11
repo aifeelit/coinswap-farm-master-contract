@@ -88,14 +88,14 @@ contract MasterCSS is IRewardDistributionRecipient {
     // The CSS TOKEN!
     CssToken public st;
 
-    uint256 public timeFirstStep;
-    uint256 public timeSecondStep;
-    uint256 public timeThirdStep;
-    uint256 public timeForthStep;
-    uint256 public timeFifthStep;
+    uint256 public immutable timeFirstStep;
+    uint256 public immutable timeSecondStep;
+    uint256 public immutable timeThirdStep;
+    uint256 public immutable timeForthStep;
+    uint256 public immutable timeFifthStep;
 
     // Dev address
-    address public devaddr;
+    address public devAddress;
 
     address public divPoolAddress;
     // CSS tokens created per block.
@@ -114,19 +114,19 @@ contract MasterCSS is IRewardDistributionRecipient {
     uint256 public startBlock;
 
     // Mint fee that is fixed on 8%
-    uint256 public mintFee = 800;
+    uint256 public constant MINT_FEE = 800;
 
     // Referral fee that is fixed on 15%
-    uint256 public divreferralfee = 1500;
+    uint256 public constant DIV_REFERRAL_FEE = 1500;
 
     //Fees to dev and treasury (initially 3,75% and 1,25%) it can be modified by using updateFees function
     uint256 public divPoolFee = 375;
-    uint256 public divdevfee = 125;
+    uint256 public divDevFee = 125;
 
     //Sum of dev and treasury fee cannot be higher than 5%
-    uint256 public maxFeeAllowed = 500;
+    uint256 public constant MAX_FEE_ALLOWED = 500;
 
-    uint256 public stakepoolId;
+    uint256 public immutable stakePoolId;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -135,17 +135,17 @@ contract MasterCSS is IRewardDistributionRecipient {
     event ReferralPaid(address indexed user,address indexed userTo, uint256 reward);
     event Burned(uint256 reward);
 
-    mapping(uint256 => bool) public enablemethod;
+    mapping(uint256 => bool) public enableMethod;
 
     constructor(
         CssToken _st,
-        address _devaddr,
+        address _devAddress,
         address _divPoolAddress,
         uint256 _cssPerBlock,
         uint256 _startBlock
     ) public {
         st = _st;
-        devaddr = _devaddr;
+        devAddress = _devAddress;
         divPoolAddress = _divPoolAddress;
         cssPerBlock = _cssPerBlock;
         startBlock = _startBlock;
@@ -161,15 +161,15 @@ contract MasterCSS is IRewardDistributionRecipient {
             fee: 0
         }));
 
-        // stakepoolId cannot be changed afterwards
-        stakepoolId = 0;
+        // stakePoolId cannot be changed afterwards
+        stakePoolId = 0;
 
         // Must be the sum of all allocation points in all pools. Initially 1500 because of stake CssToken  pool
         totalAllocPoint = 1500;
 
-        enablemethod[0] = false;
-        enablemethod[1] = false;
-        enablemethod[2] = true;
+        enableMethod[0] = false;
+        enableMethod[1] = false;
+        enableMethod[2] = true;
 
         timeFirstStep = now + 10 days;
         timeSecondStep = now + 365 days;
@@ -302,7 +302,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
         st.mint(address(this), cssReward);
         //mint to dev - fixed 8%
-        st.mint(devaddr, cssReward.mul(mintFee).div(10000));
+        st.mint(devAddress, cssReward.mul(MINT_FEE).div(10000));
 
         pool.accCssPerShare = pool.accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
@@ -310,7 +310,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     // Harvest All Rewards pools where user has pending balance at same time!  Be careful of gas spending!
     function massHarvest(uint256[] memory idsx) public {
-            require(enablemethod[0]);
+            require(enableMethod[0]);
 
         uint256 idxlength = idsx.length;
         address nulladdress = address(0);
@@ -322,7 +322,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     // Stake All Rewards to stakepool all pools where user has pending balance at same time!  Be careful of gas spending!
     function massStake(uint256[] memory idsx) public {
-         require(enablemethod[1]);
+         require(enableMethod[1]);
         uint256 idxlength = idsx.length;
           for (uint256 i = 0; i < idxlength;  i++) {
                  stakeReward(idsx[i]);
@@ -358,13 +358,13 @@ contract MasterCSS is IRewardDistributionRecipient {
                 // if pool.fee = 10 ==>  375 * 10/100000 = 3,75% fee
                 // if pool.fee = 5 ==>  375 * 5/100000 = 1,875% fee
                 // if pool.fee = 0 ==>  375 * 0/100000 = 0 fee
-                uint256 treasuryfee = _amount.mul(pool.fee).mul(divPoolFee).div(100000);
-                uint256 devfee = _amount.mul(pool.fee).mul(divdevfee).div(100000);
+                uint256 treasuryFee = _amount.mul(pool.fee).mul(divPoolFee).div(100000);
+                uint256 devFee = _amount.mul(pool.fee).mul(divDevFee).div(100000);
 
-                pool.lpToken.safeTransfer(divPoolAddress, treasuryfee);
-                pool.lpToken.safeTransfer(devaddr, devfee);
+                pool.lpToken.safeTransfer(divPoolAddress, treasuryFee);
+                pool.lpToken.safeTransfer(devAddress, devFee);
 
-                user.amount = user.amount.add(_amount).sub(treasuryfee).sub(devfee);
+                user.amount = user.amount.add(_amount).sub(treasuryFee).sub(devFee);
             } else {
                 user.amount = user.amount.add(_amount);
             }
@@ -376,7 +376,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     // user can choose autoStake reward to stake pool instead just harvest
     function stakeReward(uint256 _pid) public {
-        require(enablemethod[2] && _pid != stakepoolId);
+        require(enableMethod[2] && _pid != stakePoolId);
 
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -392,7 +392,7 @@ contract MasterCSS is IRewardDistributionRecipient {
                 safeTransfer(msg.sender, pending);
                 emit RewardPaid(msg.sender, pending);
 
-                deposit(stakepoolId, pending, address(0));
+                deposit(stakePoolId, pending, address(0));
 
             }
             user.rewardDebt = user.amount.mul(pool.accCssPerShare).div(1e12);
@@ -423,7 +423,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     function payRefFees(uint256 pending) internal
     {
-        uint256 toReferral = pending.mul(divreferralfee).div(10000);
+        uint256 toReferral = pending.mul(DIV_REFERRAL_FEE).div(10000);
         // 15%
 
         address referrer = address(0);
@@ -444,8 +444,7 @@ contract MasterCSS is IRewardDistributionRecipient {
         UserInfo storage user = userInfo[_pid][msg.sender];
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
-        user.amount = 0;
-        user.rewardDebt = 0;
+        delete pool[msg.sender];
     }
 
     function safeTransfer(address _to, uint256 _amount) internal {
@@ -460,8 +459,8 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     function updateFees(uint256 _devFee, uint256 _divPoolFee) public onlyOwner {
 
-        require(_devFee.add(_divPoolFee) <= maxFeeAllowed);
-        divdevfee = _devFee;
+        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED);
+        divDevFee = _devFee;
         divPoolFee = _divPoolFee;
     }
 
@@ -471,11 +470,11 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     // Update dev address by the previous dev.
     function devAddress(address _devaddr) public onlyOwner {
-        devaddr = _devaddr;
+        devAddress = _devaddr;
     }
 
     function enableMethod(uint256 _id, bool enabled) public onlyOwner
     {
-        enablemethod[_id] = enabled;
+        enableMethod[_id] = enabled;
     }
 }
