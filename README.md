@@ -3,7 +3,8 @@ https://coinswap.space
 
 ## CSS Token 
 - Name: CoinSwap Token
-- Ticker: CSSDecimals: 18
+- Ticker: CSS
+- Decimals: 18
 - Initial supply: 400,000
 - Max supply: 19,999,999
 
