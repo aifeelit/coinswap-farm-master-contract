@@ -15,8 +15,6 @@ interface CssReferral {
 
 contract IRewardDistributionRecipient is Ownable {
     address public rewardReferral;
-    address public rewardVote;
-
 
     function setRewardReferral(address _rewardReferral) external onlyOwner {
         rewardReferral = _rewardReferral;
