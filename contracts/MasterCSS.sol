@@ -12,15 +12,6 @@ interface CssReferral {
     function setCssReferral(address farmer, address referrer) external;
     function getCssReferral(address farmer) external view returns (address);
 }
-
-contract IRewardDistributionRecipient is Ownable {
-    address public rewardReferral;
-
-    function setRewardReferral(address _rewardReferral) external onlyOwner {
-        rewardReferral = _rewardReferral;
-    }
-
-}
 /**
  * @dev Implementation of the {IBEP20} interface.
  *
@@ -53,7 +44,7 @@ contract IRewardDistributionRecipient is Ownable {
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract MasterCSS is IRewardDistributionRecipient {
+contract MasterCSS is Ownable {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
 
@@ -86,6 +77,7 @@ contract MasterCSS is IRewardDistributionRecipient {
     // The CSS TOKEN!
     CssToken public st;
 
+    //steps in time to change cssPerBlock
     uint256 public immutable timeFirstStep;
     uint256 public immutable timeSecondStep;
     uint256 public immutable timeThirdStep;
@@ -94,7 +86,7 @@ contract MasterCSS is IRewardDistributionRecipient {
 
     // Dev address
     address public devAddress;
-
+    // Treasury address
     address public divPoolAddress;
     // CSS tokens created per block.
     uint256 public cssPerBlock;
@@ -124,7 +116,11 @@ contract MasterCSS is IRewardDistributionRecipient {
     //Sum of dev and treasury fee cannot be higher than 5%
     uint256 public constant MAX_FEE_ALLOWED = 500;
 
+    // Pool Id of stake token - CSS
     uint256 public immutable stakePoolId;
+
+    // Referral contract address
+    address public rewardReferral;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -475,4 +471,9 @@ contract MasterCSS is IRewardDistributionRecipient {
     {
         enableMethod[_id] = enabled;
     }
+
+    function setRewardReferral(address _rewardReferral) external onlyOwner {
+        rewardReferral = _rewardReferral;
+    }
+
 }
