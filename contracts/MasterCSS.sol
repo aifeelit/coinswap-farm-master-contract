@@ -117,6 +117,10 @@ contract MasterCSS is Ownable {
     //Sum of dev and treasury fee cannot be higher than 5%
     uint256 public constant MAX_FEE_ALLOWED = 500;
 
+    //The level of fee that single fee cannot go below 1%
+    uint256 public constant MIN_FEE_ALLOWED = 100;
+
+
     // Pool Id of stake token - CSS
     uint256 public immutable stakePoolId;
 
@@ -129,6 +133,11 @@ contract MasterCSS is Ownable {
     event RewardPaid(address indexed user, uint256 reward);
     event ReferralPaid(address indexed user, address indexed userTo, uint256 reward);
     event Burned(uint256 reward);
+    event SetRewardReferralAddress(address indexed sender, address indexed referralAddress);
+    event SetDevPoolAddress(address indexed sender, address indexed divPoolAddress);
+    event SetDevAddress(address indexed sender, address indexed devAddress);
+    event SetEnableMethod(address indexed sender, uint256 methodId, bool enabled);
+    event FeeUpdated(address indexed sender, uint256 divDevFee, uint256 divPoolFee);
 
     mapping(uint256 => bool) public enableMethod;
 
@@ -149,11 +158,11 @@ contract MasterCSS is Ownable {
         // adds CSS as first pool token with pid = 0
         poolExistence[_st] = true;
         poolInfo.push(PoolInfo({
-        lpToken : _st,
-        allocPoint : 1500,
-        lastRewardBlock : startBlock,
-        accCssPerShare : 0,
-        fee : 0
+            lpToken: _st,
+            allocPoint: 1500,
+            lastRewardBlock: startBlock,
+            accCssPerShare: 0,
+            fee: 0
         }));
 
         // stakePoolId cannot be changed afterwards
@@ -188,12 +197,18 @@ contract MasterCSS is Ownable {
         _;
     }
 
+    //validated if the pool with _pid exists
+    modifier validatePoolByPid(uint256 _pid) {
+        require (_pid < poolInfo . length , "Pool does not exist") ;
+        _;
+    }
+
     // Add a new lp to the pool. Can only be called by the owner.
     // Each LP token address can be added only once- safeguarded by poolExistence
     function add(uint256 _allocPoint, IBEP20 _lpToken, bool _withUpdate, uint256 __lastRewardBlock, uint256 __fee) public onlyOwner nonDuplicated(_lpToken) {
 
         // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
-        require(__fee <= 10);
+        require(__fee <= 10, "Fee is higher than allowed: must be in range 0-10 (0-100%)");
 
         if (_withUpdate) {
             massUpdatePools();
@@ -202,18 +217,18 @@ contract MasterCSS is Ownable {
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolExistence[_lpToken] = true;
         poolInfo.push(PoolInfo({
-        lpToken : _lpToken,
-        allocPoint : _allocPoint,
-        lastRewardBlock : lastRewardBlock,
-        accCssPerShare : 0,
-        fee : __fee
+            lpToken: _lpToken,
+            allocPoint: _allocPoint,
+            lastRewardBlock: lastRewardBlock,
+            accCssPerShare: 0,
+            fee:__fee
         }));
     }
 
     // Update the given pool's CSS allocation point. Can only be called by the owner. If update lastrewardblock, need update pools
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc, uint256 __fee) public onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate, uint256 __lastRewardBloc, uint256 __fee) public onlyOwner validatePoolByPid(_pid) {
         // if _fee == 10 then 100% of dev and treasury fee is applied, if _fee = 5 then 50% discount, if 0 , no fee
-        require(__fee <= 10);
+        require(__fee <= 10, "Fee is higher than allowed: must be in range 0-10 (0-100%)");
 
         if (_withUpdate) {
             massUpdatePools();
@@ -232,24 +247,24 @@ contract MasterCSS is Ownable {
     }
 
     // View function to see pending tokens on frontend.
-    function pendingReward(uint256 _pid, address _user) external returns (uint256) {
+    function pendingReward(uint256 _pid, address _user) external validatePoolByPid(_pid) validatePoolByPid(_pid) returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accCssPerShare = pool.accCssPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
 
-        if (now < timeFirstStep)
-            cssPerBlock = 6 * 10 ** 17;
-        else if (timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45 * 10 ** 16;
-        else if (timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41 * 10 ** 16;
-        else if (timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37 * 10 ** 16;
-        else if (timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33 * 10 ** 16;
-        else if (timeFifthStep < now)
-            cssPerBlock = 29 * 10 ** 16;
+        if(now < timeFirstStep)
+            cssPerBlock = 6*10**17;
+        else if(timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45*10**16;
+        else if(timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41*10**16;
+        else if(timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37*10**16;
+        else if(timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33*10**16;
+        else if(timeFifthStep < now)
+            cssPerBlock = 29*10**16;
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
@@ -268,7 +283,7 @@ contract MasterCSS is Ownable {
     }
 
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
+    function updatePool(uint256 _pid)  validatePoolByPid(_pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -279,25 +294,28 @@ contract MasterCSS is Ownable {
             return;
         }
 
-        if (now < timeFirstStep)
-            cssPerBlock = 6 * 10 ** 17;
-        else if (timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45 * 10 ** 16;
-        else if (timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41 * 10 ** 16;
-        else if (timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37 * 10 ** 16;
-        else if (timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33 * 10 ** 16;
-        else if (timeFifthStep < now)
-            cssPerBlock = 29 * 10 ** 16;
+        if(now < timeFirstStep)
+            cssPerBlock = 6*10**17;
+        else if(timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45*10**16;
+        else if(timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41*10**16;
+        else if(timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37*10**16;
+        else if(timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33*10**16;
+        else if(timeFifthStep < now)
+            cssPerBlock = 29*10**16;
 
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
 
-        st.mint(address(this), cssReward);
+        uint256 devMintAmount = cssReward.mul(MINT_FEE).div(10000);
         //mint to dev - fixed 8%
-        st.mint(devAddress, cssReward.mul(MINT_FEE).div(10000));
+        st.mint(devAddress, devMintAmount);
+
+        //mint to sender - fixed 92%
+        st.mint(address(this), cssReward.sub(devMintAmount));
 
         pool.accCssPerShare = pool.accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
@@ -305,7 +323,7 @@ contract MasterCSS is Ownable {
 
     // Harvest All Rewards pools where user has pending balance at same time!  Be careful of gas spending!
     function massHarvest(uint256[] memory idsx) public {
-        require(enableMethod[0]);
+        require(enableMethod[0], "Method not enabled in contract");
 
         uint256 idxlength = idsx.length;
         address nulladdress = address(0);
@@ -317,7 +335,7 @@ contract MasterCSS is Ownable {
 
     // Stake All Rewards to stakepool all pools where user has pending balance at same time!  Be careful of gas spending!
     function massStake(uint256[] memory idsx) public {
-        require(enableMethod[1]);
+        require(enableMethod[1], "Method not enabled in contract");
         uint256 idxlength = idsx.length;
         for (uint256 i = 0; i < idxlength; i++) {
             stakeReward(idsx[i]);
@@ -325,7 +343,7 @@ contract MasterCSS is Ownable {
     }
 
     // Deposit LP tokens to MasterCSS for CSS allocation.
-    function deposit(uint256 _pid, uint256 _amount, address referrer) public {
+    function deposit(uint256 _pid, uint256 _amount, address referrer) validatePoolByPid(_pid)  public {
 
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -370,7 +388,7 @@ contract MasterCSS is Ownable {
     }
 
     // user can choose autoStake reward to stake pool instead just harvest
-    function stakeReward(uint256 _pid) public {
+    function stakeReward(uint256 _pid) validatePoolByPid(_pid) public {
         require(enableMethod[2] && _pid != stakePoolId);
 
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -396,7 +414,7 @@ contract MasterCSS is Ownable {
     }
 
     // Withdraw LP tokens from MasterCSS.
-    function withdraw(uint256 _pid, uint256 _amount) public {
+    function withdraw(uint256 _pid, uint256 _amount) validatePoolByPid(_pid) public {
 
 
         PoolInfo storage pool = poolInfo[_pid];
@@ -405,6 +423,8 @@ contract MasterCSS is Ownable {
         updatePool(_pid);
         uint256 pending = user.amount.mul(pool.accCssPerShare).div(1e12).sub(user.rewardDebt);
         if (pending > 0) {
+            payRefFees(pending);
+
             safeTransfer(msg.sender, pending);
             emit RewardPaid(msg.sender, pending);
         }
@@ -434,7 +454,7 @@ contract MasterCSS is Ownable {
 
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid) validatePoolByPid(_pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
@@ -455,27 +475,34 @@ contract MasterCSS is Ownable {
 
     function updateFees(uint256 _devFee, uint256 _divPoolFee) public onlyOwner {
 
-        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED);
+        require(_devFee >= MIN_FEE_ALLOWED && _divPoolFee >= MIN_FEE_ALLOWED , "Each fee has to be higher or equal to 1%");
+        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED, "Sum of fees exceeds allowed 5%");
         divDevFee = _devFee;
         divPoolFee = _divPoolFee;
+
+        emit FeeUpdated(msg.sender, _devFee, _divPoolFee);
     }
 
     function setdivPoolAddress(address _divPoolAddress) public onlyOwner {
         divPoolAddress = _divPoolAddress;
+        emit SetDevPoolAddress(msg.sender, _divPoolAddress);
     }
 
     // Update dev address by the previous dev.
     function setDevAddress(address _devaddr) public onlyOwner {
         devAddress = _devaddr;
+        emit SetDevAddress(msg.sender, _devaddr);
     }
 
     function setEnableMethod(uint256 _id, bool enabled) public onlyOwner
     {
         enableMethod[_id] = enabled;
+        emit SetEnableMethod(msg.sender, _id, enabled);
     }
 
     function setRewardReferral(address _rewardReferral) external onlyOwner {
         rewardReferral = _rewardReferral;
+        emit SetRewardReferralAddress(msg.sender, _rewardReferral);
     }
 
 }

@@ -16,7 +16,7 @@ contract CssToken is BEP20('CoinSwap Token', 'CSS') {
     function mint(address _to, uint256 _amount) public onlyOwner {
         
         uint256 currentSupply = totalSupply();
-        uint256 totalAmount = currentSupply + _amount;
+        uint256 totalAmount = currentSupply.add(_amount);
         
         require(totalAmount <= _maxSupply, "HardCap: overflow");
         
