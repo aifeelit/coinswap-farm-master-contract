@@ -8,6 +8,8 @@ async function main() {
   let deploymentData = await cssTokenDeploy();
   console.log('CssToken address: ', deploymentData.cssToken.address);
 
+  //tutaj przeslac CSS tokeny na adres devdiv address
+
   console.log('Deploying masterCSS');
   deploymentData = await masterDeploy(deploymentData);
   console.log('CssToken address: ', deploymentData.masterCss.address);
@@ -39,6 +41,8 @@ async function main() {
 
   let masterIsReferralAdmin = await deploymentData.referral.isAdmin(deploymentData.masterCss.address)
   console.log('Master set as referral admin user:', masterIsReferralAdmin)
+
+  //enable methods in master
 
   deploymentData.toJsonFile();
 }
