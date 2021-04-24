@@ -830,20 +830,6 @@ contract BEP20 is Context, IBEP20, Ownable {
         );
         return true;
     }
-
-    /**
-     * @dev Creates `amount` tokens and assigns them to `msg.sender`, increasing
-     * the total supply.
-     *
-     * Requirements
-     *
-     * - `msg.sender` must be the token owner
-     */
-    function mint(uint256 amount) public onlyOwner returns (bool) {
-        _mint(_msgSender(), amount);
-        return true;
-    }
-
     /**
      * @dev Moves tokens `amount` from `sender` to `recipient`.
      *
@@ -867,22 +853,7 @@ contract BEP20 is Context, IBEP20, Ownable {
         emit Transfer(sender, recipient, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements
-     *
-     * - `to` cannot be the zero address.
-     */
-    function _mint(address account, uint256 amount) internal {
-        require(account != address(0), 'BEP20: mint to the zero address');
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[account] = _balances[account].add(amount);
-        emit Transfer(address(0), account, amount);
-    }
 
     /**
      * @dev Destroys `amount` tokens from `account`, reducing the
@@ -944,7 +915,7 @@ contract BEP20 is Context, IBEP20, Ownable {
     }
 }
 contract CssReferral {
-      using SafeBEP20 for IBEP20;
+    using SafeBEP20 for IBEP20;
     
     
     mapping(address => address) public referrers; // account_address -> referrer_address
@@ -952,7 +923,9 @@ contract CssReferral {
 
     event Referral(address indexed referrer, address indexed farmer);
     event NextOwner(address indexed _owner);
+    event NextOwnerApproved(address indexed _owner);
     event AdminStatus(address indexed _admin,bool _status);
+    event EmergencyBEP20Drain(address token, address owner, uint256 amount);
 
     // Standard contract ownership transfer.
     address public owner;
@@ -986,6 +959,7 @@ contract CssReferral {
     function acceptNextOwner() external {
         require(msg.sender == nextOwner, "Can only accept preapproved new owner.");
         owner = nextOwner;
+        emit NextOwnerApproved(nextOwner);
     }
 
     function setCssReferral(address farmer, address referrer) external onlyAdmin {
@@ -1002,12 +976,11 @@ contract CssReferral {
 
     // Set admin status.
     function setAdminStatus(address _admin, bool _status) external onlyOwner {
+        require(_admin == address(0), 'Admin: admin address cannot be null');
         isAdmin[_admin] = _status;
 
         emit AdminStatus(  _admin,  _status);
     }
-
-    event EmergencyBEP20Drain(address token, address owner, uint256 amount);
 
     // owner can drain tokens that are sent here by mistake
     function emergencyBEP20Drain(BEP20 token, uint amount) external onlyOwner {
