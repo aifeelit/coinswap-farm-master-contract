@@ -110,16 +110,9 @@ contract MasterCSS is Ownable {
     // Referral fee that is fixed on 15%
     uint256 public constant DIV_REFERRAL_FEE = 1500;
 
-    //Fees to dev and treasury (initially 3,75% and 1,25%) it can be modified by using updateFees function
-    uint256 public divPoolFee = 375;
-    uint256 public divDevFee = 125;
-
-    //Sum of dev and treasury fee cannot be higher than 5%
-    uint256 public constant MAX_FEE_ALLOWED = 500;
-
-    //The level of fee that single fee cannot go below 1%
-    uint256 public constant MIN_FEE_ALLOWED = 100;
-
+    //Fees to dev and treasury (3,75% and 1,25%)
+    uint256 public constant DIV_POOL_FEE = 375;
+    uint256 public constant DIV_DEV_FEE = 125;
 
     // Pool Id of stake token - CSS
     uint256 public immutable stakePoolId;
@@ -137,7 +130,6 @@ contract MasterCSS is Ownable {
     event SetDevPoolAddress(address indexed sender, address indexed divPoolAddress);
     event SetDevAddress(address indexed sender, address indexed devAddress);
     event SetEnableMethod(address indexed sender, uint256 methodId, bool enabled);
-    event FeeUpdated(address indexed sender, uint256 divDevFee, uint256 divPoolFee);
 
     mapping(uint256 => bool) public enableMethod;
 
@@ -145,13 +137,12 @@ contract MasterCSS is Ownable {
         CssToken _st,
         address _devAddress,
         address _divPoolAddress,
-        uint256 _cssPerBlock,
         uint256 _startBlock
     ) public {
         st = _st;
         devAddress = _devAddress;
         divPoolAddress = _divPoolAddress;
-        cssPerBlock = _cssPerBlock;
+        cssPerBlock = 6*10**17;
         startBlock = _startBlock;
 
 
@@ -371,8 +362,8 @@ contract MasterCSS is Ownable {
                 // if pool.fee = 10 ==>  375 * 10/100000 = 3,75% fee
                 // if pool.fee = 5 ==>  375 * 5/100000 = 1,875% fee
                 // if pool.fee = 0 ==>  375 * 0/100000 = 0 fee
-                uint256 treasuryFee = _amount.mul(pool.fee).mul(divPoolFee).div(100000);
-                uint256 devFee = _amount.mul(pool.fee).mul(divDevFee).div(100000);
+                uint256 treasuryFee = _amount.mul(pool.fee).mul(DIV_POOL_FEE).div(100000);
+                uint256 devFee = _amount.mul(pool.fee).mul(DIV_DEV_FEE).div(100000);
 
                 pool.lpToken.safeTransfer(divPoolAddress, treasuryFee);
                 pool.lpToken.safeTransfer(devAddress, devFee);
@@ -472,18 +463,7 @@ contract MasterCSS is Ownable {
         }
     }
 
-
-    function updateFees(uint256 _devFee, uint256 _divPoolFee) public onlyOwner {
-
-        require(_devFee >= MIN_FEE_ALLOWED && _divPoolFee >= MIN_FEE_ALLOWED , "Each fee has to be higher or equal to 1%");
-        require(_devFee.add(_divPoolFee) <= MAX_FEE_ALLOWED, "Sum of fees exceeds allowed 5%");
-        divDevFee = _devFee;
-        divPoolFee = _divPoolFee;
-
-        emit FeeUpdated(msg.sender, _devFee, _divPoolFee);
-    }
-
-    function setdivPoolAddress(address _divPoolAddress) public onlyOwner {
+    function setDivPoolAddress(address _divPoolAddress) public onlyOwner {
         divPoolAddress = _divPoolAddress;
         emit SetDevPoolAddress(msg.sender, _divPoolAddress);
     }
