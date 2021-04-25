@@ -150,7 +150,7 @@ contract MasterCSS is Ownable {
         poolExistence[_st] = true;
         poolInfo.push(PoolInfo({
             lpToken: _st,
-            allocPoint: 1500,
+            allocPoint: 2000,
             lastRewardBlock: startBlock,
             accCssPerShare: 0,
             fee: 0
@@ -160,7 +160,7 @@ contract MasterCSS is Ownable {
         stakePoolId = 0;
 
         // Must be the sum of all allocation points in all pools. Initially 1500 because of stake CssToken  pool
-        totalAllocPoint = 1500;
+        totalAllocPoint = 2000;
 
         enableMethod[0] = false;
         enableMethod[1] = false;
