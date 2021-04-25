@@ -43,11 +43,13 @@ async function main() {
   console.log('Master set as referral admin user:', masterIsReferralAdmin)
 
   //enable methods in master
+  console.log("Enabling mass harvest")
   await deploymentData.masterCss.setEnableMethod(0, true)
+  console.log("Enabling mass stake")
   await deploymentData.masterCss.setEnableMethod(1, true)
 
-  const massHarvest = await deploymentData.masterCss.enabledMethod(0);
-  const massStake = await deploymentData.masterCss.enabledMethod(1);
+  const massHarvest = await deploymentData.masterCss.enableMethod(0);
+  const massStake = await deploymentData.masterCss.enableMethod(1);
 
   console.log("Mass harvest method enabled", massHarvest)
   console.log("Mass stake method enabled", massStake)
