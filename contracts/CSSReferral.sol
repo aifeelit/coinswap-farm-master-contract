@@ -65,7 +65,7 @@ contract CssReferral is Context {
 
     // Set admin status.
     function setAdminStatus(address _admin, bool _status) external onlyOwner {
-        require(_admin == address(0), 'Admin: admin address cannot be null');
+        require(_admin != address(0), 'Admin: admin address cannot be null');
         isAdmin[_admin] = _status;
 
         emit AdminStatus(  _admin,  _status);
