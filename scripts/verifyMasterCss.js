@@ -20,7 +20,7 @@ async function sh(cmd) {
 }
 
 async function verifyMasterCss() {
-  let { stdout } = await sh(`npx hardhat verify ${masterCss} ${cssToken} ${masterConfig.devAddress} ${masterConfig.treasuryAddress} ${masterConfig.cssPerBlock} ${masterConfig.startBlock} --network testnet`)
+  let { stdout } = await sh(`npx hardhat verify ${masterCss} ${cssToken} ${masterConfig.devAddress} ${masterConfig.treasuryAddress} ${masterConfig.startBlock} --network ${process.env.HARDHAT_NETWORK}`)
   for (let line of stdout.split('\n')) {
     console.log(`${line}`)
   }

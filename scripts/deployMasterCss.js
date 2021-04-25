@@ -14,7 +14,7 @@ async function masterDeploy(deployData) {
 
   const MasterCSS = await ethers.getContractFactory("MasterCSS");
 
-  const master = await MasterCSS.deploy(stakeTokenAddr, masterConfig.devAddress, masterConfig.treasuryAddress, masterConfig.cssPerBlock, masterConfig.startBlock);
+  const master = await MasterCSS.deploy(stakeTokenAddr, masterConfig.devAddress, masterConfig.treasuryAddress, masterConfig.startBlock);
 
   console.log("MasterCSS deployed to:", master.address);
 

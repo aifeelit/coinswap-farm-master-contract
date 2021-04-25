@@ -18,7 +18,7 @@ async function sh(cmd) {
 }
 
 async function verifyCssReferral() {
-  let { stdout } = await sh(`npx hardhat verify ${referral} --network testnet`);
+  let { stdout } = await sh(`npx hardhat verify ${referral} --network ${process.env.HARDHAT_NETWORK}`);
   for (let line of stdout.split('\n')) {
     console.log(`${line}`);
   }

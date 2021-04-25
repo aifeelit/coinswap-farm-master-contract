@@ -18,7 +18,7 @@ async function sh(cmd) {
 }
 
 async function verifyCssToken() {
-  let { stdout } = await sh(`npx hardhat verify ${cssToken} --network testnet`);
+  let { stdout } = await sh(`npx hardhat verify ${cssToken} --network ${process.env.HARDHAT_NETWORK}`);
   for (let line of stdout.split('\n')) {
     console.log(`${line}`);
   }

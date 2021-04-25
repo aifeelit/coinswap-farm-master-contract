@@ -7,7 +7,6 @@ async function timelockTest() {
   const MasterCSS = await ethers.getContractFactory("MasterCSS");
 
   const masterContract = await MasterCSS.attach(masterCss);
-  console.log(process.env.HARDHAT_NETWORK)
 
   const dataEncoded = await masterContract.populateTransaction.setEnableMethod(0, true);
 
