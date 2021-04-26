@@ -142,18 +142,18 @@ contract MasterCSS is Ownable {
         st = _st;
         devAddress = _devAddress;
         divPoolAddress = _divPoolAddress;
-        cssPerBlock = 6*10**17;
+        cssPerBlock = 6 * 10 ** 17;
         startBlock = _startBlock;
 
 
         // adds CSS as first pool token with pid = 0
         poolExistence[_st] = true;
         poolInfo.push(PoolInfo({
-            lpToken: _st,
-            allocPoint: 2000,
-            lastRewardBlock: startBlock,
-            accCssPerShare: 0,
-            fee: 0
+        lpToken : _st,
+        allocPoint : 2000,
+        lastRewardBlock : startBlock,
+        accCssPerShare : 0,
+        fee : 0
         }));
 
         // stakePoolId cannot be changed afterwards
@@ -190,7 +190,7 @@ contract MasterCSS is Ownable {
 
     //validated if the pool with _pid exists
     modifier validatePoolByPid(uint256 _pid) {
-        require (_pid < poolInfo . length , "Pool does not exist") ;
+        require(_pid < poolInfo .length, "Pool does not exist");
         _;
     }
 
@@ -208,11 +208,11 @@ contract MasterCSS is Ownable {
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolExistence[_lpToken] = true;
         poolInfo.push(PoolInfo({
-            lpToken: _lpToken,
-            allocPoint: _allocPoint,
-            lastRewardBlock: lastRewardBlock,
-            accCssPerShare: 0,
-            fee:__fee
+        lpToken : _lpToken,
+        allocPoint : _allocPoint,
+        lastRewardBlock : lastRewardBlock,
+        accCssPerShare : 0,
+        fee : __fee
         }));
     }
 
@@ -238,32 +238,37 @@ contract MasterCSS is Ownable {
     }
 
     // View function to see pending tokens on frontend.
-    function pendingReward(uint256 _pid, address _user) external validatePoolByPid(_pid) validatePoolByPid(_pid) returns (uint256) {
+    function pendingReward(uint256 _pid, address _user) external validatePoolByPid(_pid) returns (uint256) {
+
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accCssPerShare = pool.accCssPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
 
-        if(now < timeFirstStep)
-            cssPerBlock = 6*10**17;
-        else if(timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45*10**16;
-        else if(timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41*10**16;
-        else if(timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37*10**16;
-        else if(timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33*10**16;
-        else if(timeFifthStep < now)
-            cssPerBlock = 29*10**16;
+        if (now < timeFirstStep)
+            cssPerBlock = 6 * 10 ** 17;
+        else if (timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45 * 10 ** 16;
+        else if (timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41 * 10 ** 16;
+        else if (timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37 * 10 ** 16;
+        else if (timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33 * 10 ** 16;
+        else if (timeFifthStep < now)
+            cssPerBlock = 29 * 10 ** 16;
 
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accCssPerShare = accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
+
+            uint256 divMintFee = cssReward.mul(MINT_FEE).div(10000);
+
+            accCssPerShare = accCssPerShare.add((cssReward.sub(divMintFee)).mul(1e12).div(lpSupply));
         }
         return user.amount.mul(accCssPerShare).div(1e12).sub(user.rewardDebt);
     }
+
 
     // Update reward variables for all pools. Be careful of gas spending!
     function massUpdatePools() public {
@@ -274,7 +279,7 @@ contract MasterCSS is Ownable {
     }
 
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid)  validatePoolByPid(_pid) public {
+    function updatePool(uint256 _pid) validatePoolByPid(_pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -285,18 +290,18 @@ contract MasterCSS is Ownable {
             return;
         }
 
-        if(now < timeFirstStep)
-            cssPerBlock = 6*10**17;
-        else if(timeFirstStep < now && now < timeSecondStep)
-            cssPerBlock = 45*10**16;
-        else if(timeSecondStep < now && now < timeThirdStep)
-            cssPerBlock = 41*10**16;
-        else if(timeThirdStep < now && now < timeForthStep)
-            cssPerBlock = 37*10**16;
-        else if(timeForthStep < now && now < timeFifthStep)
-            cssPerBlock = 33*10**16;
-        else if(timeFifthStep < now)
-            cssPerBlock = 29*10**16;
+        if (now < timeFirstStep)
+            cssPerBlock = 6 * 10 ** 17;
+        else if (timeFirstStep < now && now < timeSecondStep)
+            cssPerBlock = 45 * 10 ** 16;
+        else if (timeSecondStep < now && now < timeThirdStep)
+            cssPerBlock = 41 * 10 ** 16;
+        else if (timeThirdStep < now && now < timeForthStep)
+            cssPerBlock = 37 * 10 ** 16;
+        else if (timeForthStep < now && now < timeFifthStep)
+            cssPerBlock = 33 * 10 ** 16;
+        else if (timeFifthStep < now)
+            cssPerBlock = 29 * 10 ** 16;
 
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 cssReward = multiplier.mul(cssPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
@@ -308,7 +313,7 @@ contract MasterCSS is Ownable {
         //mint to sender - fixed 92%
         st.mint(address(this), cssReward.sub(devMintAmount));
 
-        pool.accCssPerShare = pool.accCssPerShare.add(cssReward.mul(1e12).div(lpSupply));
+        pool.accCssPerShare = pool.accCssPerShare.add(cssReward.sub(devMintAmount).mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -334,8 +339,7 @@ contract MasterCSS is Ownable {
     }
 
     // Deposit LP tokens to MasterCSS for CSS allocation.
-    function deposit(uint256 _pid, uint256 _amount, address referrer) validatePoolByPid(_pid)  public {
-
+    function deposit(uint256 _pid, uint256 _amount, address referrer) validatePoolByPid(_pid) public {
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
