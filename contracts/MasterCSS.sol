@@ -313,7 +313,7 @@ contract MasterCSS is Ownable {
         //mint to sender - fixed 92%
         st.mint(address(this), cssReward.sub(devMintAmount));
 
-        pool.accCssPerShare = pool.accCssPerShare.add(cssReward.sub(devMintAmount).mul(1e12).div(lpSupply));
+        pool.accCssPerShare = pool.accCssPerShare.add((cssReward.sub(devMintAmount)).mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
