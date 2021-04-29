@@ -1,5 +1,6 @@
 const { deployer, pairs } = require('../secrets.json')
 const { masterCss } = require('../config-farm-master.json')
+const _ = require('lodash')
 
 async function deployFarms() {
 
@@ -9,7 +10,10 @@ async function deployFarms() {
 
   const master = await MasterCSS.attach(masterCss);
 
-  for (const p of pairs) {
+  let orderedPairs = _.orderBy(pairs, ['pid'], ['asc'])
+
+  for (const p of orderedPairs) {
+    console.log(p.pid, p.symbol, p.lpAddress);
     await addFarmForPair(master, deployerAddress, p)
   }
 
@@ -17,6 +21,7 @@ async function deployFarms() {
 
 async function addFarmForPair(master, deployer, pairInfo) {
   if (pairInfo.lpAddress === "") {
+    console.log('No lp address for:', pairInfo.symbol)
     return;
   }
   await master.add(pairInfo.multiplier * 100, pairInfo.lpAddress, false, pairInfo.lastRewardBlock, pairInfo.fee).then((res) => {
