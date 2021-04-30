@@ -38,7 +38,9 @@ DEV wallet purpose is improving the project (marketing, audit payment, and more)
 - CoinSwapPair init code hash - ``
 
 ### BSCTESTNET
-- CoinSwap Token - https://
-- MasterCSS - https://
-- CoinSwapFactory - https://
-- CoinSwapRouter - https://
+- CoinSwapFactory - https://testnet.bscscan.com/address/0xf236c05e86f4d7226199F7b60DB2f8CA17117dE7#code
+- CoinSwapRouter - https://testnet.bscscan.com/address/0x2F5Ed71C1fFE31Caf917fD9B31583572f84Cf3F7#code
+- CoinSwap Token - https://testnet.bscscan.com/address/0x88b24495E1e632be0F0bb40467e0Ad1a145fE4F9#code
+- MasterCSS - https://testnet.bscscan.com/address/0x74A9313f40b04b906Eb9D357C0F277e648eD7480#code
+- CssReferral - https://testnet.bscscan.com/address/0x84a36D764889DEB889265F222962705C072423eB#code
+
