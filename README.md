@@ -31,11 +31,11 @@ TREASURY wallets are designed for community votes, either for buybacks and burns
 DEV wallet purpose is improving the project (marketing, audit payment, and more)
 
 ### BSCMAINNET
-- CoinSwap Token - https://
-- MasterCSS - https://
-- CoinSwapFactory - https://
-- CoinSwapRouter - https://
-- CoinSwapPair init code hash - ``
+- CoinSwap Token - https://bscscan.com/address/0x3bc5798416c1122BcFd7cb0e055d50061F23850d#code
+- MasterCSS - https://bscscan.com/address/0x3A0a988D680dBBB02DECBfd35F9E0676B4bEc292#code
+- CoinSwapFactory - https://bscscan.com/address/0xC2D8d27F3196D9989aBf366230a47384010440c0#code
+- CoinSwapRouter - https://bscscan.com/address/0x34DBe8E5faefaBF5018c16822e4d86F02d57Ec27#code
+- CoinSwapPair init code hash - `2e3f108b8526ff1faa4d526bb84210fc5a2bfc5aad2f62207d7964554a5d029d`
 
 ### BSCTESTNET
 - CoinSwapFactory - https://testnet.bscscan.com/address/0xf236c05e86f4d7226199F7b60DB2f8CA17117dE7#code
