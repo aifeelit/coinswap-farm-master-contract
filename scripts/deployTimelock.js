@@ -6,7 +6,7 @@ async function deployTimelock() {
 
   const Timelock = await ethers.getContractFactory("Timelock");
 
-  const token = await Timelock.deploy(deployer, 600);
+  const token = await Timelock.deploy(deployer, 144000);
 
   console.log("Timelock deployed to:", token.address);
   console.log("Timelock deployed by:", deployerAddress);
