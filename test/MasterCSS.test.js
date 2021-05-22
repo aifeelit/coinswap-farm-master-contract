@@ -1,155 +1,123 @@
-const { expectRevert, time } = require('@openzeppelin/test-helpers');
-const CSS = artifacts.require('CSSToken');
-const Master = artifacts.require('MasterCSS');
-const MockBEP20 = artifacts.require('libraries/MockBEP20');
+const {expectRevert, time} = require('@openzeppelin/test-helpers');
+const {assert} = require("chai");
+const {BigNumber} = require("bignumber.js");
 
-contract('MasterCSS', ([alice, bob, carol, dev, minter]) => {
+describe('MasterCSS', () => {
+
+    let alice;
+    let bob;
+    let owner;
+    let dev;
+    let treasury;
+    let css;
+    let lp1;
+    let lp2;
+    let lp3;
+    let master;
+    let CSSToken;
+    let MockBEP20;
+    let MasterCSS;
+
     beforeEach(async () => {
-        this.css = await CSS.new({ from: minter });
-        this.lp1 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-        this.lp2 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-        this.lp3 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
-        this.master = await Master.new(this.css.address, this.syrup.address, dev, '1000', '100', { from: minter });
-        await this.css.transferOwnership(this.master.address, { from: minter });
+        CSSToken = await ethers.getContractFactory("CssToken");
+        [owner, alice, bob, dev, treasury] = await ethers.getSigners();
+        css = await CSSToken.deploy();
 
-        await this.lp1.transfer(bob, '2000', { from: minter });
-        await this.lp2.transfer(bob, '2000', { from: minter });
-        await this.lp3.transfer(bob, '2000', { from: minter });
+        MockBEP20 = await ethers.getContractFactory("MockBEP20");
 
-        await this.lp1.transfer(alice, '2000', { from: minter });
-        await this.lp2.transfer(alice, '2000', { from: minter });
-        await this.lp3.transfer(alice, '2000', { from: minter });
-    });
+        MasterCSS = await ethers.getContractFactory("MasterCSS");
+
+        lp1 = await MockBEP20.deploy('LPToken', 'LP1', '20000000');
+        lp2 = await MockBEP20.deploy('LPToken', 'LP2', '20000000');
+        lp3 = await MockBEP20.deploy('LPToken', 'LP3', '20000000');
+
+        master = await MasterCSS.deploy(css.address, dev.address, treasury.address, 0);
+        await css.transferOwnership(master.address);
+
+        await lp1.transfer(bob.address, '10000');
+        await lp2.transfer(bob.address, '10000');
+        await lp3.transfer(bob.address, '10000');
+
+        await lp1.transfer(alice.address, '10000');
+        await lp2.transfer(alice.address, '10000');
+        await lp3.transfer(alice.address, '10000');
+    })
+
     it('real case', async () => {
-      this.lp4 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-      this.lp5 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-      this.lp6 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
-      this.lp7 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: minter });
-      this.lp8 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: minter });
-      this.lp9 = await MockBEP20.new('LPToken', 'LP3', '1000000', { from: minter });
-      await this.master.add('2000', this.lp1.address, true, { from: minter });
-      await this.master.add('1000', this.lp2.address, true, { from: minter });
-      await this.master.add('500', this.lp3.address, true, { from: minter });
-      await this.master.add('500', this.lp3.address, true, { from: minter });
-      await this.master.add('500', this.lp3.address, true, { from: minter });
-      await this.master.add('500', this.lp3.address, true, { from: minter });
-      await this.master.add('500', this.lp3.address, true, { from: minter });
-      await this.master.add('100', this.lp3.address, true, { from: minter });
-      await this.master.add('100', this.lp3.address, true, { from: minter });
-      assert.equal((await this.master.poolLength()).toString(), "10");
 
-      await time.advanceBlockTo('170');
-      await this.lp1.approve(this.master.address, '1000', { from: alice });
-      assert.equal((await this.css.balanceOf(alice)).toString(), '0');
-      await this.master.deposit(1, '20', { from: alice });
-      await this.master.withdraw(1, '20', { from: alice });
-      assert.equal((await this.css.balanceOf(alice)).toString(), '263');
+        await master.add('1000', lp1.address, true, 0, 2);
+        await master.add('500', lp2.address, true, 0, 4);
+        await master.add('500', lp3.address, true, 0, 6);
 
-      await this.css.approve(this.master.address, '1000', { from: alice });
-      await this.master.enterStaking('20', { from: alice });
-      await this.master.enterStaking('0', { from: alice });
-      await this.master.enterStaking('0', { from: alice });
-      await this.master.enterStaking('0', { from: alice });
-      assert.equal((await this.css.balanceOf(alice)).toString(), '993');
-      // assert.equal((await this.master.getPoolPoint(0, { from: minter })).toString(), '1900');
+
+        assert.equal((await master.poolLength()).toString(), "4");
+        assert.equal((await master.poolInfo(3)).fee.toString(), "6");
+
+        await time.advanceBlockTo('1');
+        await lp3.connect(alice).approve(master.address, '2000');
+        assert.equal((await css.balanceOf(alice.address)).toString(), '0');
+
+        await master.connect(alice).deposit(3, "2000", bob.address);
+        assert.equal((await master.userInfo(3, alice.address)).amount.toString(), '1940');
+        await master.connect(alice).withdraw(3, '1940');
+
+        assert.equal((await css.balanceOf(alice.address)).toString(), '68999999999999999');
+
+        await css.connect(alice).approve(master.address, '68999999999999999');
+        await master.connect(alice).deposit(0, '8999999999999999', bob.address);
+        assert.equal((await css.balanceOf(alice.address)).toString(), '60000000000000000');
     })
 
 
     it('deposit/withdraw', async () => {
-      await this.master.add('1000', this.lp1.address, true, { from: minter });
-      await this.master.add('1000', this.lp2.address, true, { from: minter });
-      await this.master.add('1000', this.lp3.address, true, { from: minter });
+        await master.add('1000', lp1.address, true, 0, 2);
+        await master.add('500', lp2.address, true, 0, 4);
+        await master.add('500', lp3.address, true, 0, 6);
 
-      await this.lp1.approve(this.master.address, '100', { from: alice });
-      await this.master.deposit(1, '20', { from: alice });
-      await this.master.deposit(1, '0', { from: alice });
-      await this.master.deposit(1, '40', { from: alice });
-      await this.master.deposit(1, '0', { from: alice });
-      assert.equal((await this.lp1.balanceOf(alice)).toString(), '1940');
-      await this.master.withdraw(1, '10', { from: alice });
-      assert.equal((await this.lp1.balanceOf(alice)).toString(), '1950');
-      assert.equal((await this.css.balanceOf(alice)).toString(), '999');
-      assert.equal((await this.css.balanceOf(dev)).toString(), '100');
+        await lp2.connect(alice).approve(master.address, '2000000');
+        await master.connect(alice).deposit(2, '2000', bob.address);
+        await master.connect(alice).deposit(2, '0', bob.address);
+        await master.connect(alice).deposit(2, '4000', bob.address);
+        await master.connect(alice).deposit(2, '0', bob.address);
+        assert.equal((await lp2.balanceOf(alice.address)).toString(), '4000');
+        await master.connect(alice).withdraw(2, '1000');
+        assert.equal((await lp2.balanceOf(alice.address)).toString(), '5000');
+        assert.equal((await css.balanceOf(alice.address)).toString(), '275999999999999999');
+        assert.equal((await css.balanceOf(dev.address)).toString(), '24000000000000000');
 
-      await this.lp1.approve(this.master.address, '100', { from: bob });
-      assert.equal((await this.lp1.balanceOf(bob)).toString(), '2000');
-      await this.master.deposit(1, '50', { from: bob });
-      assert.equal((await this.lp1.balanceOf(bob)).toString(), '1950');
-      await this.master.deposit(1, '0', { from: bob });
-      assert.equal((await this.css.balanceOf(bob)).toString(), '125');
-      await this.master.emergencyWithdraw(1, { from: bob });
-      assert.equal((await this.lp1.balanceOf(bob)).toString(), '2000');
+        await lp1.connect(bob).approve(master.address, '2000000');
+        assert.equal((await lp1.balanceOf(bob.address)).toString(), '10000');
+        await master.connect(bob).deposit(1, '6000', alice.address);
+        assert.equal((await lp1.balanceOf(bob.address)).toString(), '4000');
+        await master.connect(bob).deposit(1, '0', alice.address);
+        assert.equal((await css.balanceOf(bob.address)).toString(), '137999999999999999');
+        await master.connect(bob).emergencyWithdraw(1);
+        assert.equal((await lp1.balanceOf(bob.address)).toString(), '9940');
     })
 
     it('staking/unstaking', async () => {
-      await this.master.add('1000', this.lp1.address, true, { from: minter });
-      await this.master.add('1000', this.lp2.address, true, { from: minter });
-      await this.master.add('1000', this.lp3.address, true, { from: minter });
 
-      await this.lp1.approve(this.master.address, '10', { from: alice });
-      await this.master.deposit(1, '2', { from: alice }); //0
-      await this.master.withdraw(1, '2', { from: alice }); //1
+        await master.add('1000', lp1.address, true, 0, 2);
+        await master.add('500', lp2.address, true, 0, 4);
+        await master.add('500', lp3.address, true, 0, 6);
 
-      await this.css.approve(this.master.address, '250', { from: alice });
-      assert.equal((await this.css.balanceOf(alice)).toString(), '10');
-      await this.master.enterStaking('10', { from: alice }); //4
-      assert.equal((await this.css.balanceOf(alice)).toString(), '249');
-      await this.master.leaveStaking(250);
-      assert.equal((await this.css.balanceOf(alice)).toString(), '749');
+        await lp1.connect(alice).approve(master.address, '2000000');
+        await master.connect(alice).deposit(1, '2000', bob.address);
+        await master.connect(alice).withdraw(1, '1980');
 
-    });
-
-
-    it('updaate multiplier', async () => {
-      await this.master.add('1000', this.lp1.address, true, { from: minter });
-      await this.master.add('1000', this.lp2.address, true, { from: minter });
-      await this.master.add('1000', this.lp3.address, true, { from: minter });
-
-      await this.lp1.approve(this.master.address, '100', { from: alice });
-      await this.lp1.approve(this.master.address, '100', { from: bob });
-      await this.master.deposit(1, '100', { from: alice });
-      await this.master.deposit(1, '100', { from: bob });
-      await this.master.deposit(1, '0', { from: alice });
-      await this.master.deposit(1, '0', { from: bob });
-
-      await this.css.approve(this.master.address, '100', { from: alice });
-      await this.css.approve(this.master.address, '100', { from: bob });
-      await this.master.enterStaking('50', { from: alice });
-      await this.master.enterStaking('100', { from: bob });
-
-      await this.master.updateMultiplier('0', { from: minter });
-
-      await this.master.enterStaking('0', { from: alice });
-      await this.master.enterStaking('0', { from: bob });
-      await this.master.deposit(1, '0', { from: alice });
-      await this.master.deposit(1, '0', { from: bob });
-
-      assert.equal((await this.css.balanceOf(alice)).toString(), '700');
-      assert.equal((await this.css.balanceOf(bob)).toString(), '150');
-
-      await time.advanceBlockTo('265');
-
-      await this.master.enterStaking('0', { from: alice });
-      await this.master.enterStaking('0', { from: bob });
-      await this.master.deposit(1, '0', { from: alice });
-      await this.master.deposit(1, '0', { from: bob });
-
-      assert.equal((await this.css.balanceOf(alice)).toString(), '700');
-      assert.equal((await this.css.balanceOf(bob)).toString(), '150');
-
-      await this.master.leaveStaking('50', { from: alice });
-      await this.master.leaveStaking('100', { from: bob });
-      await this.master.withdraw(1, '100', { from: alice });
-      await this.master.withdraw(1, '100', { from: bob });
+        await css.connect(alice).approve(master.address, '2500');
+        assert.equal((await css.balanceOf(alice.address)).toString(), '137999999999999999');
+        await master.connect(alice).deposit(0, '1000', bob.address);
+        assert.equal((await css.balanceOf(alice.address)).toString(), '137999999999998999');
+        await master.connect(alice).withdraw(0, '1000');
+        assert.equal((await css.balanceOf(alice.address)).toString(), '138000000000000198');
 
     });
 
-    it('should allow dev and only dev to update dev', async () => {
-        assert.equal((await this.master.devaddr()).valueOf(), dev);
-        await expectRevert(this.master.dev(bob, { from: bob }), 'dev: wut?');
-        await this.master.dev(bob, { from: dev });
-        assert.equal((await this.master.devaddr()).valueOf(), bob);
-        await this.master.dev(alice, { from: bob });
-        assert.equal((await this.master.devaddr()).valueOf(), alice);
+
+    it('check devAddress change', async () => {
+        assert.equal((await master.devAddress()).valueOf(), dev.address);
+        await master.setDevAddress(bob.address);
+        assert.equal((await master.devAddress()).valueOf(), bob.address);
     })
 });

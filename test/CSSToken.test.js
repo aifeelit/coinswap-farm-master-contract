@@ -1,15 +1,39 @@
-const { assert } = require("chai");
+const {assert} = require("chai");
 
-const CSS = artifacts.require('CSSToken');
 
-contract('CSSToken', ([alice, bob, carol, dev, minter]) => {
+describe('CSSToken', () => {
+
+    let alice;
+    let owner;
+    let css;
+
     beforeEach(async () => {
-        this.css = await CSS.new({ from: minter });
+        const CSSToken = await ethers.getContractFactory("CssToken");
+        [owner, alice] = await ethers.getSigners();
+
+        console.log(owner.address, alice.address);
+
+        css = await CSSToken.deploy();
+
     });
 
+    it("Should set the right owner", async function () {
+        assert.equal(await css.owner(), owner.address);
+    });
 
-    it('mint', async () => {
-        await this.css.mint(alice, 1000, { from: minter });
-        assert.equal((await this.css.balanceOf(alice)).toString(), '1000');
+    it('check initial balance', async () => {
+        const balance = await css.balanceOf(alice.address);
+        const balanceOwner = await css.balanceOf(owner.address);
+        assert.equal(balance.toString(), '0');
+        assert.equal(balanceOwner.toString(), '400000000000000000000000');
+    })
+
+    it('check balance after mint', async () => {
+        // console.log(css.functions['mint(address,uint256)'].toString());
+        await css['mint(address,uint256)'](alice.address, 1000);
+
+        const balance = await css.balanceOf(alice.address);
+
+        assert.equal(balance.toString(), '1000');
     })
 });
