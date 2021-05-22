@@ -11,8 +11,6 @@ describe('CSSToken', () => {
         const CSSToken = await ethers.getContractFactory("CssToken");
         [owner, alice] = await ethers.getSigners();
 
-        console.log(owner.address, alice.address);
-
         css = await CSSToken.deploy();
 
     });
@@ -29,7 +27,6 @@ describe('CSSToken', () => {
     })
 
     it('check balance after mint', async () => {
-        // console.log(css.functions['mint(address,uint256)'].toString());
         await css['mint(address,uint256)'](alice.address, 1000);
 
         const balance = await css.balanceOf(alice.address);
